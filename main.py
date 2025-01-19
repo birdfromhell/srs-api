@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from flask import Flask, jsonify, abort
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List
@@ -11,7 +11,7 @@ from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Read-only Restaurant API")
+app = Flask(__name__)
 
 # Dependency
 def get_db():
@@ -22,60 +22,69 @@ def get_db():
         db.close()
 
 # User endpoints
-@app.get("/users", response_model=List[schemas.UserBase])
-def get_users(db: Session = Depends(get_db)):
+@app.route("/users", methods=["GET"])
+def get_users():
+    db = next(get_db())
     users = db.query(models.User).all()
-    return users
+    return jsonify([schemas.UserBase.from_orm(user).dict() for user in users])
 
-@app.get("/users/{user_id}", response_model=schemas.UserBase)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+@app.route("/users/<int:user_id>", methods=["GET"])
+def get_user(user_id: int):
+    db = next(get_db())
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+        abort(404, description="User not found")
+    return jsonify(schemas.UserBase.from_orm(user).dict())
 
 # Image endpoints
-@app.get("/images", response_model=List[schemas.ImageBase])
-def get_images(db: Session = Depends(get_db)):
+@app.route("/images", methods=["GET"])
+def get_images():
+    db = next(get_db())
     images = db.query(models.Image).all()
-    return images
+    return jsonify([schemas.ImageBase.from_orm(image).dict() for image in images])
 
-@app.get("/images/{image_id}", response_model=schemas.ImageBase)
-def get_image(image_id: int, db: Session = Depends(get_db)):
+@app.route("/images/<int:image_id>", methods=["GET"])
+def get_image(image_id: int):
+    db = next(get_db())
     image = db.query(models.Image).filter(models.Image.id == image_id).first()
     if not image:
-        raise HTTPException(status_code=404, detail="Image not found")
-    return image
+        abort(404, description="Image not found")
+    return jsonify(schemas.ImageBase.from_orm(image).dict())
 
 # Menu Category endpoints
-@app.get("/menu-categories", response_model=List[schemas.MenuCategoryBase])
-def get_menu_categories(db: Session = Depends(get_db)):
+@app.route("/menu-categories", methods=["GET"])
+def get_menu_categories():
+    db = next(get_db())
     categories = db.query(models.MenuCategory).all()
-    return categories
+    return jsonify([schemas.MenuCategoryBase.from_orm(category).dict() for category in categories])
 
-@app.get("/menu-categories/{category_id}", response_model=schemas.MenuCategoryBase)
-def get_menu_category(category_id: int, db: Session = Depends(get_db)):
+@app.route("/menu-categories/<int:category_id>", methods=["GET"])
+def get_menu_category(category_id: int):
+    db = next(get_db())
     category = db.query(models.MenuCategory).filter(models.MenuCategory.id == category_id).first()
     if not category:
-        raise HTTPException(status_code=404, detail="Menu category not found")
-    return category
+        abort(404, description="Menu category not found")
+    return jsonify(schemas.MenuCategoryBase.from_orm(category).dict())
 
 # Menu Item endpoints
-@app.get("/menu-items", response_model=List[schemas.MenuItemBase])
-def get_menu_items(db: Session = Depends(get_db)):
+@app.route("/menu-items", methods=["GET"])
+def get_menu_items():
+    db = next(get_db())
     items = db.query(models.MenuItem).all()
-    return items
+    return jsonify([schemas.MenuItemBase.from_orm(item).dict() for item in items])
 
-@app.get("/menu-items/{item_id}", response_model=schemas.MenuItemBase)
-def get_menu_item(item_id: int, db: Session = Depends(get_db)):
+@app.route("/menu-items/<int:item_id>", methods=["GET"])
+def get_menu_item(item_id: int):
+    db = next(get_db())
     item = db.query(models.MenuItem).filter(models.MenuItem.id == item_id).first()
     if not item:
-        raise HTTPException(status_code=404, detail="Menu item not found")
-    return item
+        abort(404, description="Menu item not found")
+    return jsonify(schemas.MenuItemBase.from_orm(item).dict())
 
 # FAQ Category endpoints
-@app.get("/faqs", response_model=List[schemas.FAQCategoryResponse])
-def get_faqs(db: Session = Depends(get_db)):
+@app.route("/faqs", methods=["GET"])
+def get_faqs():
+    db = next(get_db())
     query = select(models.FAQ, models.CategoryFaq).join(
         models.CategoryFaq,
         models.FAQ.category_id == models.CategoryFaq.id
@@ -97,21 +106,22 @@ def get_faqs(db: Session = Depends(get_db)):
         for category_name, items in grouped_faqs.items()
     ]
     
-    return response
+    return jsonify(response)
 
 # Review endpoints
-@app.get("/reviews", response_model=List[schemas.ReviewBase])
-def get_reviews(db: Session = Depends(get_db)):
+@app.route("/reviews", methods=["GET"])
+def get_reviews():
+    db = next(get_db())
     reviews = db.query(models.Review).all()
-    return reviews
+    return jsonify([schemas.ReviewBase.from_orm(review).dict() for review in reviews])
 
-@app.get("/reviews/{review_id}", response_model=schemas.ReviewBase)
-def get_review(review_id: int, db: Session = Depends(get_db)):
+@app.route("/reviews/<int:review_id>", methods=["GET"])
+def get_review(review_id: int):
+    db = next(get_db())
     review = db.query(models.Review).filter(models.Review.id == review_id).first()
     if not review:
-        raise HTTPException(status_code=404, detail="Review not found")
-    return review
+        abort(404, description="Review not found")
+    return jsonify(schemas.ReviewBase.from_orm(review).dict())
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000)
