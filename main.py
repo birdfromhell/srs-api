@@ -1,8 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from typing import List
-from . import models, schemas, database
-from .database import engine
+from collections import defaultdict
+import models
+import schemas
+import database
+from database import SessionLocal, engine
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -69,16 +74,30 @@ def get_menu_item(item_id: int, db: Session = Depends(get_db)):
     return item
 
 # FAQ Category endpoints
-@app.get("/faq-categories", response_model=List[schemas.FAQCategoryBase])
-def get_faq_categories(db: Session = Depends(get_db)):
-    categories = db.query(models.CategoryFaq).all()
-    return categories
-
-# FAQ endpoints
-@app.get("/faqs", response_model=List[schemas.FAQBase])
+@app.get("/faqs", response_model=List[schemas.FAQCategoryResponse])
 def get_faqs(db: Session = Depends(get_db)):
-    faqs = db.query(models.FAQ).all()
-    return faqs
+    query = select(models.FAQ, models.CategoryFaq).join(
+        models.CategoryFaq,
+        models.FAQ.category_id == models.CategoryFaq.id
+    )
+    results = db.execute(query).all()
+    
+    grouped_faqs = defaultdict(list)
+    for faq, category in results:
+        grouped_faqs[category.name].append({
+            "title": faq.title,
+            "text": faq.text
+        })
+    
+    response = [
+        {
+            "name": category_name,
+            "items": items
+        }
+        for category_name, items in grouped_faqs.items()
+    ]
+    
+    return response
 
 # Review endpoints
 @app.get("/reviews", response_model=List[schemas.ReviewBase])

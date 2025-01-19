@@ -65,3 +65,25 @@ class ReviewBase(BaseModel):
 
     class Config:
         from_attributes = True
+
+class FAQItemResponse(BaseModel):
+    title: str
+    text: str
+
+    class Config:
+        from_attributes = True
+
+class FAQCategoryResponse(BaseModel):
+    name: str
+    items: list[FAQItemResponse]
+
+    class Config:
+        from_attributes = True
+
+class FAQCreate(BaseModel):
+    title: str
+    text: str
+    category_id: int
+
+class FAQCategoryCreate(BaseModel):
+    name: str

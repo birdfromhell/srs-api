@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from .database import Base
+from database import Base
 
 class User(Base):
     __tablename__ = 'user'
@@ -74,6 +74,7 @@ class MenuItem(Base):
             'category_id': self.category_id
         }
 
+
 class CategoryFaq(Base):
     __tablename__ = 'category_faq'
     id = Column(Integer, primary_key=True)
@@ -81,7 +82,7 @@ class CategoryFaq(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    faqs = relationship('FAQ', back_populates='category')
+    faqs = relationship('FAQ', back_populates='category', cascade="all, delete-orphan")
 
 class FAQ(Base):
     __tablename__ = 'faq'
